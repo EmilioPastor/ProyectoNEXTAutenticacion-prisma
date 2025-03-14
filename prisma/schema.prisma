@@ -3,13 +3,43 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String?   @unique
+  password      String?
+  emailVerified DateTime?
+  image         String?
+  role          String?   @default("USER")
+  accounts      Account[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
 }
 
 model Repartidor {
   id       Int      @id @default(autoincrement())
   nombre   String
+  imagen   String?
   telefono String
   pedidos  Pedido[]
 
@@ -23,7 +53,7 @@ model Pedido {
   direccion_cliente String
   repartidorId      Int?
   repartidor        Repartidor? @relation(fields: [repartidorId], references: [id])
-  pizzas            Pizza[]
+  pizzas            Pizza[]     @relation("PedidoToPizza")
 
   @@map("pedidos")
 }
@@ -31,8 +61,9 @@ model Pedido {
 model Pizza {
   id      Int      @id @default(autoincrement())
   nombre  String
+  imagen  String?
   precio  Float
-  pedidos Pedido[]
+  pedidos Pedido[] @relation("PedidoToPizza")
 
   @@map("pizzas")
 }

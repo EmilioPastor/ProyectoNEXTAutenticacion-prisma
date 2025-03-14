@@ -1,21 +1,141 @@
 'use server'
+import bcrypt from 'bcryptjs'
+import  prisma  from '@/lib/prisma'
+import { signIn, signOut } from '@/auth';
+import { getUserByEmail } from '@/lib/data';
 import { revalidatePath } from 'next/cache'
 
-import prisma from '@/lib/prisma'
+
+// REGISTER
+export async function register(prevState, formData) {
+    const name = formData.get('name')
+    const email = formData.get('email')
+    const password = formData.get('password')
+
+    // Comprobamos si el usuario ya está registrado
+    const user = await getUserByEmail(email);
+
+    if (user) {
+        return {
+            error: 'El email ya está registrado',
+            fields: Object.fromEntries(formData.entries())
+        }
+    }
+
+    // Encriptamos password 
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    // Guardamos credenciales en base datos
+    await prisma.user.create({
+        data: {
+            name,
+            email,
+            password: hashedPassword
+        }
+    })
+
+    return { success: "Registro correcto" }
+}
 
 
 
-//  ------------------------ REPARTIDORES ------------------------
+// LOGIN credentials
+export async function login(prevState, formData) {
+    const email = formData.get('email')
+    const password = formData.get('password')
 
+    // Comprobamos si el usuario está registrado
+    const user = await getUserByEmail(email);
+
+    if (!user) {
+        return {
+            error: 'Usuario no registrado.',
+            fields: Object.fromEntries(formData.entries())
+        }
+    }
+
+    // Comparamos password 
+    const matchPassword = await bcrypt.compare(password, user.password)
+
+    if (user && matchPassword) {  // && user.emailVerified
+        await signIn('credentials',
+            {
+                email, password,
+                redirectTo: globalThis.callbackUrl
+            })
+        return { success: "Inicio de sesión correcto" }
+    } else {
+        return {
+            error: 'Credenciales incorrectas.',
+            fields: Object.fromEntries(formData.entries())
+        }
+    }
+
+}
+
+// LOGIN google
+export async function loginGoogle() {
+    try {
+        await signIn('google', { redirectTo: globalThis.callbackUrl })
+    } catch (error) {
+        console.log(error);
+        throw error
+    }
+}
+
+// LOGIN github
+export async function loginGithub() {
+    try {
+        await signIn('github', { redirectTo: globalThis.callbackUrl })
+    } catch (error) {
+        console.log(error);
+        throw error
+    }
+}
+
+
+// LOGIN discord
+export async function loginDiscord() {
+    try {
+        await signIn('discord', { redirectTo: globalThis.callbackUrl })
+    } catch (error) {
+        console.log(error);
+        throw error
+    }
+}
+
+
+// LOGIN resend (Magic Link to email)
+export async function loginResend(formData) {
+    try {
+        await signIn("resend", formData)
+    } catch (error) {
+        console.log(error);
+        throw error
+    }
+}
+
+
+
+// LOGOUT
+export async function logout() {
+    try {
+        await signOut({ redirectTo: '/' })
+    } catch (error) {
+        throw error
+    }
+}
 
 export async function insertarRepartidor(formData) {
     const nombre = formData.get('nombre')
     const telefono = formData.get('telefono')
+    const imagen = formData.get('imagen') || null
 
     await prisma.repartidor.create({
         data: {
             nombre: nombre,
             telefono: telefono,
+            imagen: imagen
         }
     })
 
@@ -24,11 +144,11 @@ export async function insertarRepartidor(formData) {
 }
 
 
-
 export async function modificarRepartidor(formData) {
     const id = Number(formData.get('id'))
     const nombre = formData.get('nombre')
     const telefono = formData.get('telefono')
+    const imagen = formData.get('imagen')
 
 
     await prisma.repartidor.update({
@@ -38,6 +158,7 @@ export async function modificarRepartidor(formData) {
         data: {
             nombre: nombre,
             telefono: telefono,
+            imagen: imagen
         }
     })
 
@@ -73,9 +194,9 @@ export async function insertarPedido(prevState, formData) {
     const pizzasIDs = await prisma.pizza.findMany({
         select: { id: true }
     })
-    // console.log(pizzasIDs);
+
     const connect = pizzasIDs.filter(p => formData.get(`pizza${p.id}`) !== null)
-    // console.log(connect);
+ 
 
     await prisma.pedido.create({
         data: {
@@ -149,6 +270,7 @@ export async function eliminarPedido(prevState, formData) {
 export async function insertarPizza(formData) {
     const nombre = formData.get('nombre')
     const precio = Number(formData.get('precio'))
+    const imagen = formData.get('imagen')
 
 
     await prisma.pizza.create({
@@ -169,6 +291,7 @@ export async function modificarPizza(formData) {
     const id = Number(formData.get('id'))
     const nombre = formData.get('nombre')
     const precio = Number(formData.get('precio'))
+    const imagen = formData.get('imagen')
     
     await prisma.pizza.update({
         where: {
@@ -177,6 +300,7 @@ export async function modificarPizza(formData) {
         data: {
             nombre: nombre,
             precio: precio,
+            imagen: imagen
         }
     })
 
@@ -197,4 +321,5 @@ export async function eliminarPizza(formData) {
     revalidatePath('/pizzas')
 
 }
+
 

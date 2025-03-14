@@ -1,0 +1,1 @@
+export { GET, POST } from '@/auth' // Reexportamos GET  y POST

@@ -10,8 +10,12 @@
     "seed": "node ./prisma/seed.mjs"
   },
   "dependencies": {
-    "@prisma/client": "^6.3.1",
+    "@auth/prisma-adapter": "^2.8.0",
+    "@prisma/client": "^6.5.0",
+    "bcryptjs": "^3.0.2",
+    "lucide-react": "^0.479.0",
     "next": "15.1.6",
+    "next-auth": "^5.0.0-beta.25",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -20,7 +24,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.1.6",
     "postcss": "^8",
-    "prisma": "^6.3.1",
+    "prisma": "^6.5.0",
     "tailwindcss": "^3.4.1"
   }
 }
